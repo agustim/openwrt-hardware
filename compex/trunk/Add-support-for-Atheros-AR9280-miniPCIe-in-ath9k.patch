@@ -1,0 +1,93 @@
+From f0c4f19c6c3d64070d8560fdd3cbf89ceb4a8873 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Agust=C3=AD=20Moll?= <agusti.moll@guifi.net>
+Date: Fri, 19 Sep 2014 00:34:06 +0200
+Subject: [PATCH 2/2] Add support for Atheros AR9280 miniPCIe in ath9k
+
+---
+ .../mac80211/patches/930-ath9k_allow_pci.patch     |   74 ++++++++++++++++++++
+ 1 file changed, 74 insertions(+)
+ create mode 100644 package/kernel/mac80211/patches/930-ath9k_allow_pci.patch
+
+diff --git a/package/kernel/mac80211/patches/930-ath9k_allow_pci.patch b/package/kernel/mac80211/patches/930-ath9k_allow_pci.patch
+new file mode 100644
+index 0000000..13c1349
+--- /dev/null
++++ b/package/kernel/mac80211/patches/930-ath9k_allow_pci.patch
+@@ -0,0 +1,74 @@
++From 53748cdf40ef993bad95616b26c2f316accbdc0a Mon Sep 17 00:00:00 2001
++From: =?UTF-8?q?Agust=C3=AD=20Moll?= <agusti.moll@guifi.net>
++Date: Thu, 18 Sep 2014 23:56:00 +0200
++Subject: [PATCH] Patch PCI
++
++---
++ drivers/net/wireless/ath/ath9k/init.c |    5 +++++
++ drivers/net/wireless/ath/ath9k/pci.c  |    6 +++---
++ 2 files changed, 8 insertions(+), 3 deletions(-)
++
++diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
++index 7a3a3a9..c3aa9f7 100644
++--- a/drivers/net/wireless/ath/ath9k/init.c
+++++ b/drivers/net/wireless/ath/ath9k/init.c
++@@ -31,6 +31,7 @@ struct ath9k_eeprom_ctx {
++ };
++ 
++ static char *dev_info = "ath9k";
+++int tt;
++ 
++ MODULE_AUTHOR("Atheros Communications");
++ MODULE_DESCRIPTION("Support for Atheros 802.11n wireless LAN cards.");
++@@ -511,6 +512,9 @@ static int ath9k_init_softc(u16 devid, struct ath_softc *sc,
++ 	sc->tx99_power = MAX_RATE_POWER + 1;
++ 	init_waitqueue_head(&sc->tx_wait);
++ 
+++	if(tt==1){
+++		pdata=NULL;
+++	}
++ 	if (!pdata || pdata->use_eeprom) {
++ 		ah->ah_flags |= AH_USE_EEPROM;
++ 		sc->sc_ah->led_pin = -1;
++@@ -525,6 +529,7 @@ static int ath9k_init_softc(u16 devid, struct ath_softc *sc,
++ 		ah->disable_5ghz = pdata->disable_5ghz;
++ 		if (!pdata->endian_check)
++ 			ah->ah_flags |= AH_NO_EEP_SWAP;
+++		tt=1;
++ 	}
++ 
++ 	common->ops = &ah->reg_ops;
++diff --git a/drivers/net/wireless/ath/ath9k/pci.c b/drivers/net/wireless/ath/ath9k/pci.c
++index 8e0a64d..a02634b 100644
++--- a/drivers/net/wireless/ath/ath9k/pci.c
+++++ b/drivers/net/wireless/ath/ath9k/pci.c
++@@ -693,7 +693,7 @@ static bool ath_pci_eeprom_read(struct ath_common *common, u32 off, u16 *data)
++ 	struct ath_softc *sc = (struct ath_softc *) common->priv;
++ 	struct ath9k_platform_data *pdata = sc->dev->platform_data;
++ 
++-	if (pdata && !pdata->use_eeprom) {
+++/*	if (pdata && !pdata->use_eeprom) {
++ 		if (off >= (ARRAY_SIZE(pdata->eeprom_data))) {
++ 			ath_err(common,
++ 				"%s: eeprom read failed, offset %08x is out of range\n",
++@@ -701,7 +701,7 @@ static bool ath_pci_eeprom_read(struct ath_common *common, u32 off, u16 *data)
++ 		}
++ 
++ 		*data = pdata->eeprom_data[off];
++-	} else {
+++	} else { */
++ 		struct ath_hw *ah = (struct ath_hw *) common->ah;
++ 
++ 		common->ops->read(ah, AR5416_EEPROM_OFFSET +
++@@ -717,7 +717,7 @@ static bool ath_pci_eeprom_read(struct ath_common *common, u32 off, u16 *data)
++ 
++ 		*data = MS(common->ops->read(ah, AR_EEPROM_STATUS_DATA),
++ 			   AR_EEPROM_STATUS_DATA_VAL);
++-	}
+++//	}
++ 
++ 	return true;
++ }
++-- 
++1.7.10.4
++
+-- 
+1.7.10.4
+
